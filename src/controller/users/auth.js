@@ -52,7 +52,7 @@ module.exports = {
     let now = new Date().getTime();
     //检查缓存
     if (user) {
-      let userInfo = JSON.parse(user);
+      let userInfo = user;
       if (userInfo.login_expire > now) {
         Json.res(ctx, 200, "登录成功");
       } else {
@@ -60,7 +60,7 @@ module.exports = {
         if (result.data) {
           let updateData = {
             session_key: result.data.session_key,
-            session_key_expire: now + result.data.expires_in * 1000
+            session_key_expire: now + 7200 * 1000
           };
           if (result.data.unionid) {
             updateData["unionid"] = result.data.unionid;
@@ -76,6 +76,7 @@ module.exports = {
       }
     } else {
       let result = await getUser(req.code);
+      console.log(result.data);
 
       if (result.data) {
         //检查是否存在用户
@@ -86,7 +87,7 @@ module.exports = {
           //更新用户
           let updateData = {
             session_key: result.data.session_key,
-            session_key_expire: now + result.data.expires_in * 1000
+            session_key_expire: now + 7200 * 1000
           };
           if (result.data.unionid) {
             updateData["unionid"] = result.data.unionid;
@@ -101,7 +102,7 @@ module.exports = {
           let addData = {
             openid: result.data.openid,
             session_key: result.data.session_key,
-            session_key_expire: now + result.data.expires_in * 1000,
+            session_key_expire: now + 7200 * 1000,
             unionid: "",
             nickName: "",
             gender: "",
@@ -125,7 +126,7 @@ module.exports = {
     }
   },
   getUserInfo: async (ctx, next) => {
-    let userInfo = JSON.parse(ctx.request.body.sessionUser);
+    let userInfo = ctx.request.body.sessionUser;
     let user = await User.findOne({
       openid: userInfo.openid
     });
@@ -137,7 +138,7 @@ module.exports = {
     }
   },
   updateInfo: async (ctx, next) => {
-    let userInfo = JSON.parse(ctx.request.body.sessionUser);
+    let userInfo = ctx.request.body.sessionUser;
     let req = ctx.request.body;
     let addData = {
       nickName: req.nickName,

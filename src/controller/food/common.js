@@ -8,19 +8,16 @@ module.exports = {
   //检索食物
   getFoods: async (ctx, next) => {
     let types = ctx.request.query.types;
+    let user = ctx.request.body.sessionUser;
+
     console.log(types);
-    let arr = [];
-    if (types != undefined) {
-      types.split(",").forEach(e => {
-        arr.push({
-          type: e
-        });
-      });
-    }
+    console.log(user.openid);
+
     let result;
-    if (types != undefined && arr.length > 0) {
+    if (types != undefined) {
       result = await food.find({
-        $or: arr
+        openId: user.openid,
+        type: types
       });
     } else {
       result = await food.find();
@@ -42,22 +39,15 @@ module.exports = {
   //添加、更新食物
   updateFood: async (ctx, next) => {
     let req = ctx.request.body;
-    console.log(req);
-    let find;
+    let user = ctx.request.body.sessionUser;
     if (req._id) {
-      find = await food.find({
-        _id: req._id
-      });
-    } else {
-      find = false;
-    }
-    let result;
-    if (find) {
       //更新
       result = await food.updateOne(
         {
+          openId: user.openid,
           _id: req._id
         },
+
         {
           $set: {
             name: req.name,
@@ -68,6 +58,7 @@ module.exports = {
     } else {
       //新增
       result = await new food({
+        openId: user.openid,
         name: req.name,
         type: req.type
       }).save();
@@ -80,13 +71,18 @@ module.exports = {
   },
   //删除食物
   deleteFood: async (ctx, next) => {
-    let reqId = ctx.request.query._id;
+    let reqId = ctx.request.query._id
+      ? ctx.request.query._id
+      : ctx.request.body._id;
+    let user = ctx.request.body.sessionUser;
     if (reqId !== undefined) {
       let findData = await food.find({
+        openId: user.openid,
         _id: reqId
       });
       if (findData) {
         let result = await food.remove({
+          openId: user.openid,
           _id: reqId
         });
         if (result) {
@@ -105,13 +101,15 @@ module.exports = {
   //记录饮食
   recordList: async (ctx, next) => {
     let req = ctx.request.body;
+    let user = ctx.request.body.sessionUser;
     console.log(req);
     let now = new Date().getTime();
     let arr = JSON.parse(req.foodList);
     let result = await new record({
       recordTime: now,
       foodList: arr,
-      type: req.type
+      type: req.type,
+      openId: user.openid
     }).save();
     if (result) {
       Json.res(ctx, 200, "添加成功");
@@ -121,14 +119,19 @@ module.exports = {
   },
   //获取记录
   getRecord: async (ctx, next) => {
-    let result = await record.find();
+    let user = ctx.request.body.sessionUser;
+
+    let result = await record.find({
+      openId: user.openid
+    });
     if (result) {
       let arr = [];
       result.forEach(element => {
         arr.push({
           foodList: element.foodList,
           _id: element._id,
-          recordTime: element.recordTime
+          recordTime: element.recordTime,
+          type: element.type
         });
       });
       Json.res(ctx, 200, "获取成功", arr);
@@ -138,14 +141,25 @@ module.exports = {
   },
   //删除记录
   delRecord: async (ctx, next) => {
-    let reqId = ctx.request.query._id;
+    let reqId = ctx.request.query._id
+      ? ctx.request.query._id
+      : ctx.request.body._id;
+    let user = ctx.request.body.sessionUser;
     if (reqId !== undefined) {
       let findData = await record.find({
+        openId: user.openid,
         _id: reqId
       });
       if (findData) {
         let result = await record.remove({
-          _id: reqId
+          $and: [
+            {
+              openId: user.openid
+            },
+            {
+              _id: reqId
+            }
+          ]
         });
         if (result) {
           Json.res(ctx, 200, "删除成功");

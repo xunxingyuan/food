@@ -48,11 +48,20 @@ app.use(async (ctx, next) => {
   ctx.set("Access-Control-Allow-Credentials", true);
   let id = ctx.request.header["xtoken"];
   let data = await redisStore.get(id);
-  if (data) {
-    ctx.request.body.sessionUser = data.user;
-    await next();
+  if (data && data.user) {
+    let userData = JSON.parse(data.user);
+    if (userData.openid) {
+      ctx.request.body.sessionUser = userData;
+      await next();
+    } else {
+      await redisStore.destroy(id);
+      ctx.body = {
+        code: 10005,
+        msg: "未登录或者session过期，请重新登录"
+      };
+    }
   } else {
-    if (ctx.url === "/users/login" || ctx.url.indexOf("/myfood") > -1) {
+    if (ctx.url === "/users/login") {
       await next();
     } else {
       ctx.body = {
