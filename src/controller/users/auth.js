@@ -54,6 +54,7 @@ module.exports = {
     if (user) {
       let userInfo = user;
       if (userInfo.login_expire > now) {
+        ctx.session.user = JSON.stringify(user);
         Json.res(ctx, 200, "登录成功");
       } else {
         let result = await getUser(req.code);
