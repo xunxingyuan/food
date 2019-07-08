@@ -3,6 +3,7 @@ const User = db.User;
 const config = require("../../../conf/conf");
 const Json = require("../../tools/jsonResponse");
 const Http = require("axios");
+const food = db.Food;
 
 //获取用户openId
 
@@ -120,6 +121,61 @@ module.exports = {
             login_expire: addData.session_key_expire
           });
           await createUser(ctx, addData);
+          //初始化食物
+          let foodArr = [
+            {
+              name: "粥",
+              type: 1
+            },
+            {
+              name: "面条",
+              type: 1
+            },
+            {
+              name: "红烧肉",
+              type: 2
+            },
+            {
+              name: "红烧鱼",
+              type: 2
+            },
+            {
+              name: "清炒土豆丝",
+              type: 3
+            },
+            {
+              name: "清炒菜心",
+              type: 3
+            },
+            {
+              name: "玉米排骨汤",
+              type: 4
+            },
+            {
+              name: "莲子汤",
+              type: 4
+            },
+            {
+              name: "炒面",
+              type: 6
+            },
+            {
+              name: "炒饭",
+              type: 6
+            },
+            {
+              name: "苹果",
+              type: 6
+            },
+            {
+              name: "葡萄",
+              type: 6
+            }
+          ];
+          foodArr.forEach(e => {
+            e["openId"] = result.data.openid;
+          });
+          await food.insertMany(foodArr);
         }
       } else {
         Json.res(ctx, 10003, "微信用户授权失败");
