@@ -157,11 +157,11 @@ module.exports = {
             },
             {
               name: "炒面",
-              type: 6
+              type: 5
             },
             {
               name: "炒饭",
-              type: 6
+              type: 5
             },
             {
               name: "苹果",
