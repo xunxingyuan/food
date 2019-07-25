@@ -19,7 +19,7 @@ async function getUser(code) {
   return await Http.get(url);
 }
 
-//创建用户
+//创建用户操作
 async function createUser(ctx, data) {
   let add = await new User(data).save();
   if (add) {
@@ -29,7 +29,7 @@ async function createUser(ctx, data) {
   }
 }
 
-//更新用户
+//更新用户操作
 async function updateUser(ctx, data) {
   let update = await User.updateOne(
     {
@@ -43,6 +43,116 @@ async function updateUser(ctx, data) {
     Json.res(ctx, 200, "登录成功");
   } else {
     Json.res(ctx, 10001, "用户信息更新失败");
+  }
+}
+
+//更新/新建用户
+async function checkUser(ctx, next) {
+  let req = ctx.request.body;
+  let user = ctx.request.body.sessionUser;
+  let now = new Date().getTime();
+  let result = await getUser(req.code);
+  console.log(result.data);
+
+  if (result.data) {
+    //检查是否存在用户
+    let check = await User.findOne({
+      openid: result.data.openid
+    });
+    if (check) {
+      //更新用户
+      let updateData = {
+        session_key: result.data.session_key,
+        session_key_expire: now + 7200 * 1000
+      };
+      if (result.data.unionid) {
+        updateData["unionid"] = result.data.unionid;
+      }
+      ctx.session.user = JSON.stringify({
+        openid: result.data.openid,
+        login_expire: updateData.session_key_expire
+      });
+      await updateUser(ctx, updateData);
+    } else {
+      //新建用户
+      let addData = {
+        openid: result.data.openid,
+        session_key: result.data.session_key,
+        session_key_expire: now + 7200 * 1000,
+        unionid: "",
+        nickName: "",
+        gender: "",
+        city: "",
+        province: "",
+        country: "",
+        avatarUrl: ""
+      };
+      if (result.data.unionid) {
+        addData["unionid"] = result.data.unionid;
+      }
+      ctx.session.user = JSON.stringify({
+        openid: addData.openid,
+        login_expire: addData.session_key_expire
+      });
+      await createUser(ctx, addData);
+      //初始化食物
+      let foodArr = [
+        {
+          name: "粥",
+          type: 1
+        },
+        {
+          name: "面条",
+          type: 1
+        },
+        {
+          name: "红烧肉",
+          type: 2
+        },
+        {
+          name: "红烧鱼",
+          type: 2
+        },
+        {
+          name: "清炒土豆丝",
+          type: 3
+        },
+        {
+          name: "清炒菜心",
+          type: 3
+        },
+        {
+          name: "玉米排骨汤",
+          type: 4
+        },
+        {
+          name: "莲子汤",
+          type: 4
+        },
+        {
+          name: "炒面",
+          type: 5
+        },
+        {
+          name: "炒饭",
+          type: 5
+        },
+        {
+          name: "苹果",
+          type: 6
+        },
+        {
+          name: "葡萄",
+          type: 6
+        }
+      ];
+      foodArr.forEach(e => {
+        e["openId"] = result.data.openid;
+      });
+      await food.insertMany(foodArr);
+    }
+  } else {
+    Json.res(ctx, 10003, "微信用户授权失败");
   }
 }
 
@@ -77,109 +187,7 @@ module.exports = {
         }
       }
     } else {
-      let result = await getUser(req.code);
-      console.log(result.data);
-
-      if (result.data) {
-        //检查是否存在用户
-        let check = await User.findOne({
-          openid: result.data.openid
-        });
-        if (check) {
-          //更新用户
-          let updateData = {
-            session_key: result.data.session_key,
-            session_key_expire: now + 7200 * 1000
-          };
-          if (result.data.unionid) {
-            updateData["unionid"] = result.data.unionid;
-          }
-          ctx.session.user = JSON.stringify({
-            openid: result.data.openid,
-            login_expire: updateData.session_key_expire
-          });
-          await updateUser(ctx, updateData);
-        } else {
-          //新建用户
-          let addData = {
-            openid: result.data.openid,
-            session_key: result.data.session_key,
-            session_key_expire: now + 7200 * 1000,
-            unionid: "",
-            nickName: "",
-            gender: "",
-            city: "",
-            province: "",
-            country: "",
-            avatarUrl: ""
-          };
-          if (result.data.unionid) {
-            addData["unionid"] = result.data.unionid;
-          }
-          ctx.session.user = JSON.stringify({
-            openid: addData.openid,
-            login_expire: addData.session_key_expire
-          });
-          await createUser(ctx, addData);
-          //初始化食物
-          let foodArr = [
-            {
-              name: "粥",
-              type: 1
-            },
-            {
-              name: "面条",
-              type: 1
-            },
-            {
-              name: "红烧肉",
-              type: 2
-            },
-            {
-              name: "红烧鱼",
-              type: 2
-            },
-            {
-              name: "清炒土豆丝",
-              type: 3
-            },
-            {
-              name: "清炒菜心",
-              type: 3
-            },
-            {
-              name: "玉米排骨汤",
-              type: 4
-            },
-            {
-              name: "莲子汤",
-              type: 4
-            },
-            {
-              name: "炒面",
-              type: 5
-            },
-            {
-              name: "炒饭",
-              type: 5
-            },
-            {
-              name: "苹果",
-              type: 6
-            },
-            {
-              name: "葡萄",
-              type: 6
-            }
-          ];
-          foodArr.forEach(e => {
-            e["openId"] = result.data.openid;
-          });
-          await food.insertMany(foodArr);
-        }
-      } else {
-        Json.res(ctx, 10003, "微信用户授权失败");
-      }
+      await checkUser(ctx, next);
     }
   },
   getUserInfo: async (ctx, next) => {
@@ -218,5 +226,9 @@ module.exports = {
     } else {
       Json.res(ctx, 202, "用户不存在");
     }
+  },
+  //微信静默登录
+  wxLogin: async (ctx, next) => {
+    await checkUser(ctx, next);
   }
 };

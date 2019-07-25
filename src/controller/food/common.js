@@ -3,6 +3,7 @@ const Http = require("axios");
 const db = require("../../db/index");
 const food = db.Food;
 const record = db.Record;
+const config = require("../../../conf/conf.js");
 
 module.exports = {
   //检索食物
@@ -171,6 +172,31 @@ module.exports = {
       }
     } else {
       Json.res(ctx, 40002, "参数不完整");
+    }
+  },
+  //检索菜谱
+  getFoodMenu: async (ctx, next) => {
+    let req = ctx.request.query;
+
+    let getData = {
+      cpName: req.cpName,
+      maxResults: req.maxResults,
+      page: req.page,
+      type: req.type
+    };
+    let result = await Http.get(
+      "http://caipu.market.alicloudapi.com/showapi_cpQuery",
+      {
+        headers: {
+          Authorization: "APPCODE " + config.food.code
+        },
+        params: getData
+      }
+    );
+    if (result.data.status == "0") {
+      Json.res(ctx, 200, "获取成功", result.data.result);
+    } else {
+      Json.res(ctx, 40001, "获取失败");
     }
   }
 };

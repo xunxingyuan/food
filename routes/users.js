@@ -7,6 +7,10 @@ router.post("/login", async function(ctx, next) {
   await users.auth.login(ctx, next);
 });
 
+router.post("/wxLogin", async function(ctx, next) {
+  await users.auth.wxLogin(ctx, next);
+});
+
 router.get("/info", async function(ctx, next) {
   await users.auth.getUserInfo(ctx, next);
 });
